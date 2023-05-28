@@ -1,96 +1,113 @@
 import React, { useEffect, useState } from 'react';
+// eslint-disable-next-line
 import {
-  ChakraProvider,
+  AspectRatio,
   Box,
+  Button,
+  HStack,
   Text,
-  Link,
   VStack,
-  Code,
-  Grid,
-  theme,
+  Center,
 } from '@chakra-ui/react';
-//////////////////////////////////////////////////////////
-import { initializeApp } from 'firebase/app';
-import { Firestore, getFirestore } from 'firebase/firestore';
-import { collection, query, where, getDocs } from 'firebase/firestore';
 
-const firebaseConfig = {
-  apiKey: 'AIzaSyADNXDyCTRcosCDMetaTZU58B37om2TFUE',
-  authDomain: 'zip-zoong.firebaseapp.com',
-  projectId: 'zip-zoong',
-  storageBucket: 'zip-zoong.appspot.com',
-  messagingSenderId: '355084792460',
-  appId: '1:355084792460:web:41b08d923016cc76a741a9',
-  measurementId: 'G-T6G7T6GPCY',
-};
+import { Calendar, momentLocalizer } from 'react-big-calendar';
+import moment from 'moment';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { AiFillPhone } from 'react-icons/ai';
+import { FaAirbnb } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
+import { getUserForExport, getUserStudyRecordsForExport } from './Firebase';
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-/////////////////////////////////////////////////////////////
+function manageUserStudyRecord(r) {
+  var calEvents = [];
+  for (var i = 0; i < r.length; i++) {
+    const studyTime = r[i].end.seconds - r[i].start.seconds;
+    calEvents.push({
+      title: studyTime + '초 공부함',
+      // start: r[i].start.seconds,
+      // end: r[i].end,
+      start: new Date(r[i].start.seconds * 1000),
+      end: new Date(r[i].start.seconds * 1000),
+    });
+  }
 
-// Get a list of cities from your database
-async function getCities(db) {
-  const citiesCol = collection(db, 'cities');
-  const citySnapshot = await getDocs(citiesCol);
-  console.log(citySnapshot.docs);
-  const cityList = citySnapshot.docs.map(doc => doc.data());
-  return cityList;
-}
-
-async function getUsers(db) {
-  const querySnapshot = await getDocs(collection(db, 'users'));
-  const querySnapshot2 = await getDocs(
-    collection(querySnapshot, 'study_record')
-  );
-  console.log('222', querySnapshot2);
-  console.log('querySnapshot', querySnapshot);
-  console.log('querySnapshot.docs', querySnapshot.docs);
-  // console.log('testing', querySnapshot.docs.data);
-  console.log('forEachDoc');
-  querySnapshot.forEach(doc => {
-    console.log(doc.data());
-  });
-  console.log('!!!!!!!!!!!!!!!!!!!!!!!');
-  console.log(querySnapshot.docs[0].data());
-  getDocs(collection());
-}
-
-async function getUserStudyRecords(db) {
-  const querySnapshot = await getDocs(
-    collection(db, '/users/6zlRWdioOCPqZlFL19FU/study_record')
-  );
-
-  console.log(querySnapshot.docs);
-  querySnapshot.forEach(doc => {
-    console.log(doc.id, ' => ', doc.data());
-  });
-}
-
-async function writeUsers(db) {
-  // try {
-  //   const docRef = await addDoc(collection(db, 'users'), {
-  //     first: 'Junhyeong',
-  //     last: 'Park',
-  //     born: 2020,
-  //   });
-  //   console.log('Document written with ID: ', docRef.id);
-  // } catch (e) {
-  //   console.error('Error adding document: ', e);
-  // }
+  console.log('calEvents', calEvents);
+  return calEvents;
 }
 
 function App() {
-  // const [data, setData] = useState(null);
-  // // getUsers(db);
-  // // getCities(db);
-  // useEffect(() => {
-  //   getUserStudyRecords(db);
-  //   // setData(getCities(db));
-  //   // writeUsers(db);
-  // }, []);
+  const [studyRecordState, setStudyRecordState] = useState([
+    {
+      title: '나와야됨!!!',
+      allDay: true,
+      start: new Date(2023, 5 - 1, 27),
+      end: new Date(2023, 5 - 1, 27),
+      pk: '1',
+    },
+    {
+      title: '!!!',
+      start: new Date(2023, 5 - 1, 28),
+      end: new Date(2023, 5 - 1, 28),
+    },
+  ]);
 
-  return <div>hello</div>;
+  // getUserForExport();
+
+  // rec을 처리하기
+  useEffect(async () => {
+    const rec = await getUserStudyRecordsForExport();
+    var processed_rec = manageUserStudyRecord(rec);
+    setStudyRecordState(processed_rec);
+    console.log('hello');
+  }, []);
+
+  moment.locale('ko-KR');
+  const localizer = momentLocalizer(moment);
+  const [sqautEventsState, setSqautEventsState] = useState([
+    {
+      title: '스쿼트19회',
+      allDay: true,
+      start: new Date(2023, 5 - 1, 1),
+      end: new Date(2023, 5 - 1, 1),
+    },
+    {
+      title: '스쿼트2회',
+      start: new Date('2023-05-20 09:10:20'),
+      end: new Date('2023-05-20 09:10:20'),
+    },
+    {
+      title: '테스트',
+      start: Date.now(),
+      end: Date.now(),
+    },
+  ]);
+
+  return (
+    <Box>
+      <HStack
+        justifyContent={'space-between'}
+        py={5}
+        px={10}
+        borderBottomWidth={1}
+      >
+        <Box color="red.500">
+          <FaAirbnb size={'48'} />
+        </Box>
+        <HStack spacing={2}>
+          <Button>Log in</Button>
+          <Button colorScheme={'red'}>Sign up</Button>
+        </HStack>
+      </HStack>
+
+      <Calendar
+        localizer={localizer}
+        events={studyRecordState} //원래는 {events}
+        startAccessor="start"
+        endAccessor="end"
+        style={{ height: 500, margin: '50px' }}
+      />
+    </Box>
+  );
 }
 
 export default App;
