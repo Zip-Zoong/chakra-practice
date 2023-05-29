@@ -1,5 +1,3 @@
-import React, { useEffect, useState } from 'react';
-
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs } from 'firebase/firestore/lite';
 
@@ -13,27 +11,16 @@ const firebaseConfig = {
   measurementId: process.env.REACT_APP_MEASUREMENT_ID,
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Get a list of cities from your database
-async function getCities(db) {
-  const citiesCol = collection(db, 'cities');
-  const citySnapshot = await getDocs(citiesCol);
-  console.log(citySnapshot.docs);
-  const cityList = citySnapshot.docs.map(doc => doc.data());
-  return cityList;
-}
-
-async function getUserForExport() {
-  // await console.log(db);
+async function getUsersFromDB() {
   const usersCol = collection(db, 'users');
-  // await console.log(usersCol);
   const userSnapshot = await getDocs(usersCol);
-  await console.log(userSnapshot.docs);
+  // console.log('userSnapshot', userSnapshot);
+  // console.log('userSnapshot.docs', userSnapshot.docs);
   const userList = userSnapshot.docs.map(doc => doc.data());
-  await console.log(userList);
+  console.log('userList', userList);
 
   return userList;
 }
@@ -56,16 +43,14 @@ async function getUsers(db) {
   getDocs(collection());
 }
 
-async function getUserStudyRecordsForExport() {
+async function getUserStudyRecordsFromDB() {
   const querySnapshot = await getDocs(
     collection(db, '/users/6zlRWdioOCPqZlFL19FU/study_record')
   );
-  console.log(querySnapshot.docs);
+  const studyRecords = querySnapshot.docs.map(doc => doc.data());
+  console.log('studyRecords', studyRecords);
 
-  const studyRecord = querySnapshot.docs.map(doc => doc.data());
-  await console.log(studyRecord);
-
-  return studyRecord;
+  return studyRecords;
 }
 
 async function writeUsers(db) {
@@ -81,4 +66,4 @@ async function writeUsers(db) {
   // }
 }
 
-export { getUserForExport, getUserStudyRecordsForExport };
+export { getUsersFromDB, getUserStudyRecordsFromDB };
