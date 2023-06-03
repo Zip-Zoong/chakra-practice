@@ -1,5 +1,11 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs } from 'firebase/firestore/lite';
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  getDocs,
+} from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_API_KEY,
@@ -53,6 +59,107 @@ async function getUserStudyRecordsFromDB() {
   return studyRecords;
 }
 
+async function getUserStudyRecordsFromDB2(userId) {
+  const studyRecordsQuery = query(
+    collection(db, 'STUDY_RECORDS'),
+    where('user_id', '==', userId)
+  );
+  const studyRecordsQuerySnapshot = await getDocs(studyRecordsQuery);
+  // console.log('studyRecordsQuerySnapshot', studyRecordsQuerySnapshot.docs);
+
+  const rawData_studyRecords = [];
+  studyRecordsQuerySnapshot.forEach(doc => {
+    rawData_studyRecords.push(doc.data());
+  });
+  await console.log(rawData_studyRecords);
+
+  ////////////////////////
+  const durationBySubjectId = [];
+
+  rawData_studyRecords.forEach(item => {
+    const { subject_id, end_time, start_time } = item;
+    const duration = end_time - start_time;
+
+    const isItemExist = durationBySubjectId.find(
+      item => item.subject_id === subject_id
+    );
+    if (isItemExist) {
+      isItemExist.duration += duration;
+    } else {
+      durationBySubjectId.push({ subject_id, duration });
+    }
+  });
+
+  console.log('durationBySubjectId', durationBySubjectId);
+
+  /////////////////////////////////////////////////////////
+  const subjectsRef = collection(db, 'STUDY_SUBJECTS_TEST');
+  const subjectsQuery = query(subjectsRef, where('user_id', '==', userId));
+  const subjectsQuerySnapshot = await getDocs(subjectsQuery);
+  const subjectsList = [];
+  await subjectsQuerySnapshot.forEach(doc => {
+    const newSubjectsObject = doc.data();
+    newSubjectsObject.subject_id = doc.id;
+    subjectsList.push(newSubjectsObject);
+  });
+  await console.log('subjectsList', subjectsList);
+
+  // /////////////////////////////////////
+
+  const mergedArray = durationBySubjectId.map(item => {
+    const { subject_id, duration } = item;
+    const matchingItem = subjectsList.find(
+      item => item.subject_id === subject_id
+    );
+    const subject_name = matchingItem ? matchingItem.subject_name : '';
+
+    return {
+      subject_id,
+      duration,
+      subject_name,
+    };
+  });
+
+  // mergedArray();
+  await console.log(mergedArray);
+
+  ///////////////////////
+  // // 공부 기록을 담을 배열
+
+  // // study_records 컬렉션의 각 문서에 대해 반복
+  // for (const doc of studyRecordsquerySnapshot.docs) {
+  //   const recordData = doc.data();
+  //   const subjectId = recordData.subject_id;
+  //   const startTime = recordData.start_time;
+  //   const endTime = recordData.end_time;
+
+  //   // study_subjects 컬렉션에서 해당 과목 정보 조회
+  //   const subjectDoc = await db
+  //     .collection('STUDY_SUBJECTS_TEST')
+  //     .doc(subjectId)
+  //     .get();
+
+  //   if (subjectDoc.exists) {
+  //     const subjectData = subjectDoc.data();
+  //     const subjectName = subjectData.subject_name;
+
+  //     // 각 과목의 공부 시간 계산
+  //     const studyTime = endTime - startTime;
+
+  //     // 결과 리스트에 과목 이름과 공부 시간 추가
+  //     recordsList.push({
+  //       subjectName,
+  //       studyTime,
+  //     });
+  //   } else {
+  //     console.log('해당 과목이 존재하지 않습니다.');
+  //   }
+  // }
+
+  // console.log(recordsList);
+  return mergedArray;
+}
+
 async function writeUsers(db) {
   // try {
   //   const docRef = await addDoc(collection(db, 'users'), {
@@ -66,4 +173,8 @@ async function writeUsers(db) {
   // }
 }
 
-export { getUsersFromDB, getUserStudyRecordsFromDB };
+export {
+  getUsersFromDB,
+  getUserStudyRecordsFromDB,
+  getUserStudyRecordsFromDB2,
+};
